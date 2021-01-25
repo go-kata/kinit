@@ -93,7 +93,6 @@ func (c *Container) Invoke(exec Executor, initializers ...Initializer) error {
 	}
 	arena := NewArena()
 	defer arena.MustFinalize()
-	arena.MustRegister(reflect.TypeOf(arena), reflect.ValueOf(arena), kdone.Noop)
 	for _, init := range initializers {
 		if init == nil {
 			return kerror.New(kerror.EInvalid, "container cannot apply nil initializer")
