@@ -18,4 +18,4 @@ For example, changing of version from `v0.1.0` to `v0.1.1` indicates compatible 
 
 ## References
 
-[github.com/go-kata/kinitx](https://github.com/go-kata/kinitx).
+[github.com/go-kata/kinitx](https://github.com/go-kata/kinitx)
