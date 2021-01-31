@@ -1,6 +1,6 @@
 # KInit
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/go-kata/kinit.svg)](https://pkg.go.dev/github.com/go-kata/kinit@master)
+[![Go Reference](https://pkg.go.dev/badge/github.com/go-kata/kinit.svg)](https://pkg.go.dev/github.com/go-kata/kinit)
 
 ## Installation
 
