@@ -80,10 +80,10 @@ func (c *Container) MustApply(proc Processor) {
 	}
 }
 
-// Invoke applies given initializers, resolves the dependency graph based on parameters
+// Invoke applies given bootstrappers, resolves the dependency graph based on parameters
 // of the given executor using this container and then executes an activity. Dependencies
 // of each subsequent executor will be resolved dynamically before it's activity execution.
-func (c *Container) Invoke(exec Executor, initializers ...Initializer) error {
+func (c *Container) Invoke(exec Executor, bootstrappers ...Bootstrapper) error {
 	if c == nil {
 		kerror.NPE()
 		return nil
@@ -93,11 +93,11 @@ func (c *Container) Invoke(exec Executor, initializers ...Initializer) error {
 	}
 	arena := NewArena()
 	defer arena.MustFinalize()
-	for _, init := range initializers {
-		if init == nil {
-			return kerror.New(kerror.EInvalid, "container cannot apply nil initializer")
+	for _, boot := range bootstrappers {
+		if boot == nil {
+			return kerror.New(kerror.EInvalid, "container cannot apply nil bootstrapper")
 		}
-		if err := init.Initialize(arena); err != nil {
+		if err := boot.Bootstrap(arena); err != nil {
 			return err
 		}
 	}
@@ -105,8 +105,8 @@ func (c *Container) Invoke(exec Executor, initializers ...Initializer) error {
 }
 
 // MustInvoke is a variant of Invoke that panics on error.
-func (c *Container) MustInvoke(exec Executor, initializers ...Initializer) {
-	if err := c.Invoke(exec, initializers...); err != nil {
+func (c *Container) MustInvoke(exec Executor, bootstrappers ...Bootstrapper) {
+	if err := c.Invoke(exec, bootstrappers...); err != nil {
 		panic(err)
 	}
 }

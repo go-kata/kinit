@@ -57,17 +57,17 @@ func MustApply(proc Processor) {
 }
 
 // Invoke calls the Invoke method of the default container.
-func Invoke(exec Executor, initializers ...Initializer) error {
+func Invoke(exec Executor, bootstrappers ...Bootstrapper) error {
 	if err := callHooks(); err != nil {
 		return err
 	}
-	return defaultContainer.Invoke(exec, initializers...)
+	return defaultContainer.Invoke(exec, bootstrappers...)
 }
 
 // MustInvoke calls the MustInvoke method of the default container.
-func MustInvoke(exec Executor, initializers ...Initializer) {
+func MustInvoke(exec Executor, bootstrappers ...Bootstrapper) {
 	if err := callHooks(); err != nil {
 		panic(err)
 	}
-	defaultContainer.MustInvoke(exec, initializers...)
+	defaultContainer.MustInvoke(exec, bootstrappers...)
 }

@@ -67,7 +67,7 @@ func TestContainer(t *testing.T) {
 				return nil, nil
 			}), nil
 		}),
-		newTestInitializer(t),
+		newTestBootstrapper(t),
 	)
 }
 
@@ -78,7 +78,7 @@ func TestContainerWithBrokenGraph(t *testing.T) {
 		newTestExecutor(func(*testObject1) (Executor, error) {
 			return nil, nil
 		}),
-		newTestInitializer(t),
+		newTestBootstrapper(t),
 	)
 	t.Logf("%+v", err)
 	if kerror.ClassOf(err) != kerror.ENotFound {
@@ -128,7 +128,7 @@ func TestContainerWithNilExecutor(t *testing.T) {
 	}
 }
 
-func TestContainerWithNilInitializer(t *testing.T) {
+func TestContainerWithNilBootstrapper(t *testing.T) {
 	c := NewContainer()
 	err := c.Invoke(newTestExecutor(func() (Executor, error) { return nil, nil }), nil)
 	t.Logf("%+v", err)
