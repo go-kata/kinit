@@ -198,6 +198,6 @@ the code uses this library looks like.
 
 **[KInitX](https://github.com/go-kata/kinitx)** is the library that provides default extensions for the **KInit**.
 
-**[KDone](https://github.com/go-kata/kinitx)** is the library that provides tools for destroying objects.
+**[KDone](https://github.com/go-kata/kdone)** is the library that provides tools for destroying objects.
 
-**[KError](https://github.com/go-kata/kinitx)** is the library that provides tools for handling errors.
+**[KError](https://github.com/go-kata/kerror)** is the library that provides tools for handling errors.
