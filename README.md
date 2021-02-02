@@ -41,7 +41,7 @@ To register a hook use `kinit.Hook` or `kinit.MustHook` method:
 ```go
 kinit.Hook(func() error { /* fill up the global container here with returning error if occurred */ })
 
-kinit.MustHook(func() { /* fill up the global container here */})
+kinit.MustHook(func() { /* fill up the global container here */ })
 ```
 
 Both methods return an index of registered hook starting from zero. It is not very useful information, but
