@@ -38,6 +38,7 @@ func callHooks() error {
 	if hooksCalled {
 		return nil
 	}
+	hooksCalled = true
 	for _, hook := range hooks {
 		if err := hook(); err != nil {
 			return err

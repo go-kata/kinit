@@ -1,6 +1,7 @@
 # KInit
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/go-kata/kinit.svg)](https://pkg.go.dev/github.com/go-kata/kinit)
+[![codecov](https://codecov.io/gh/go-kata/kinit/branch/master/graph/badge.svg?token=NBFR4LKON8)](https://codecov.io/gh/go-kata/kinit)
 
 ## Installation
 

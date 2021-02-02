@@ -49,3 +49,17 @@ func (c *testConstructor) Create(a ...reflect.Value) (reflect.Value, kdone.Destr
 	}
 	return obj, dtor, err
 }
+
+type testBrokenConstructor struct{}
+
+func (testBrokenConstructor) Type() reflect.Type {
+	return nil
+}
+
+func (testBrokenConstructor) Parameters() []reflect.Type {
+	return nil
+}
+
+func (testBrokenConstructor) Create(a ...reflect.Value) (reflect.Value, kdone.Destructor, error) {
+	return reflect.Value{}, nil, nil
+}

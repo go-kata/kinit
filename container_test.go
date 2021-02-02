@@ -71,7 +71,78 @@ func TestContainer(t *testing.T) {
 	)
 }
 
-func TestContainerWithBrokenGraph(t *testing.T) {
+func TestContainer_ProvideWithNilConstructor(t *testing.T) {
+	c := NewContainer()
+	err := c.Provide(nil)
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.EInvalid {
+		t.Fail()
+		return
+	}
+}
+
+func TestContainer_ProvideWithBrokenConstructor(t *testing.T) {
+	c := NewContainer()
+	err := c.Provide(testBrokenConstructor{})
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.EInvalid {
+		t.Fail()
+		return
+	}
+}
+
+func TestContainer_ProvideWithAmbiguousConstructor(t *testing.T) {
+	c := NewContainer()
+	c.MustProvide(newTestConstructor(newTestObject1))
+	err := c.Provide(newTestConstructor(newTestObject1))
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.EAmbiguous {
+		t.Fail()
+		return
+	}
+}
+
+func TestContainer_ApplyWithNilProcessor(t *testing.T) {
+	c := NewContainer()
+	err := c.Apply(nil)
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.EInvalid {
+		t.Fail()
+		return
+	}
+}
+
+func TestContainer_ApplyWithBrokenProcessor(t *testing.T) {
+	c := NewContainer()
+	err := c.Apply(testBrokenProcessor{})
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.EInvalid {
+		t.Fail()
+		return
+	}
+}
+
+func TestContainer_InvokeWithNilExecutor(t *testing.T) {
+	c := NewContainer()
+	err := c.Invoke(nil)
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.EInvalid {
+		t.Fail()
+		return
+	}
+}
+
+func TestContainer_InvokeWithNilBootstrapper(t *testing.T) {
+	c := NewContainer()
+	err := c.Invoke(newTestExecutor(func() (Executor, error) { return nil, nil }), nil)
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.EInvalid {
+		t.Fail()
+		return
+	}
+}
+
+func TestContainer_InvokeWithBrokenGraph(t *testing.T) {
 	c := NewContainer()
 	c.MustProvide(newTestConstructor(newTestObject1))
 	err := c.Invoke(
@@ -87,53 +158,38 @@ func TestContainerWithBrokenGraph(t *testing.T) {
 	}
 }
 
-func TestContainerWithNilConstructor(t *testing.T) {
-	c := NewContainer()
-	err := c.Provide(nil)
-	t.Logf("%+v", err)
-	if kerror.ClassOf(err) != kerror.EInvalid {
-		t.Fail()
-		return
-	}
+func TestNilContainer_Provide(t *testing.T) {
+	defer func() {
+		v := recover()
+		t.Logf("%+v", v)
+		if v == nil {
+			t.Fail()
+			return
+		}
+	}()
+	_ = (*Container)(nil).Provide(newTestConstructor(newTestObject1))
 }
 
-func TestContainerWithAmbiguousConstructor(t *testing.T) {
-	c := NewContainer()
-	c.MustProvide(newTestConstructor(newTestObject1))
-	err := c.Provide(newTestConstructor(newTestObject1))
-	t.Logf("%+v", err)
-	if kerror.ClassOf(err) != kerror.EAmbiguous {
-		t.Fail()
-		return
-	}
+func TestNilContainer_Apply(t *testing.T) {
+	defer func() {
+		v := recover()
+		t.Logf("%+v", v)
+		if v == nil {
+			t.Fail()
+			return
+		}
+	}()
+	_ = (*Container)(nil).Apply(newTestProcessor(processTestCounter))
 }
 
-func TestContainerWithNilProcessor(t *testing.T) {
-	c := NewContainer()
-	err := c.Apply(nil)
-	t.Logf("%+v", err)
-	if kerror.ClassOf(err) != kerror.EInvalid {
-		t.Fail()
-		return
-	}
-}
-
-func TestContainerWithNilExecutor(t *testing.T) {
-	c := NewContainer()
-	err := c.Invoke(nil)
-	t.Logf("%+v", err)
-	if kerror.ClassOf(err) != kerror.EInvalid {
-		t.Fail()
-		return
-	}
-}
-
-func TestContainerWithNilBootstrapper(t *testing.T) {
-	c := NewContainer()
-	err := c.Invoke(newTestExecutor(func() (Executor, error) { return nil, nil }), nil)
-	t.Logf("%+v", err)
-	if kerror.ClassOf(err) != kerror.EInvalid {
-		t.Fail()
-		return
-	}
+func TestNilContainer_Invoke(t *testing.T) {
+	defer func() {
+		v := recover()
+		t.Logf("%+v", v)
+		if v == nil {
+			t.Fail()
+			return
+		}
+	}()
+	_ = (*Container)(nil).Invoke(newTestExecutor(func() (Executor, error) { return nil, nil }))
 }
