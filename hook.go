@@ -27,6 +27,7 @@ func MustHook(f func()) int {
 }
 
 // callHooks calls registered hooks.
+// TODO: Hooks must be called only once.
 func callHooks() error {
 	for _, hook := range hooks {
 		if err := hook(); err != nil {
