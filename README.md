@@ -31,7 +31,7 @@ ctr := kinit.NewContainer()
 ```
 
 A local container must be filled up with *constructors* and *processors* manually whereas the global one
-can be filled up when initializing packages. You may use init functions fot this, but it's recommended
+can be filled up when initializing packages. You may use init functions for this, but it's recommended
 to use *declared functions*.
 
 ### Declared functions
