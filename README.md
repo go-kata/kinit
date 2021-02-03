@@ -36,7 +36,7 @@ to use *declared functions*.
 
 ### Declared functions
 
-> Declared function replace hooks since version 0.3.0. Hooks were very badly designed and totally removed for now.
+> Declared functions replace hooks since version 0.3.0. Hooks were very badly designed and totally removed for now.
 
 Declared functions will be called only when the global container starts an *invocation* at the first time.
 It's useful for libraries which may not perform container filling up operations if their entities just used manually.
