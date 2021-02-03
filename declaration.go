@@ -34,7 +34,7 @@ func (d *Declaration) MustDeclare(f func()) {
 	}
 }
 
-// Declare appends the given function to this declaration.
+// DeclareErrorProne appends the given function to this declaration.
 func (d *Declaration) DeclareErrorProne(f func() error) error {
 	if d == nil {
 		kerror.NPE()
