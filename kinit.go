@@ -7,9 +7,9 @@
 // it includes injection process itself) and doesn't divide program to the real code and configuration. Also it
 // makes the dependency injection process more customizable thanks to interfaces.
 //
-// However, taking in account that the reflection is slow, it is better to use hooks provided by this package
-// instead of raw init functions to fill up the default container in libraries. It avoids slow reflection calls
-// when library entities are used manually.
+// However, taking in account that the reflection is slow, it is better to use declared function provided by
+// this package instead of raw init functions to fill up the global container in libraries. It avoids slow
+// reflection calls when library entities are used manually.
 //
 // You may divide resolving of the dependency graph into steps using the executors chaining. It makes possible
 // to chose the next step depending on some conditions, e.g. depends on what command of console program is
@@ -33,41 +33,74 @@
 // the container invocation.
 package kinit
 
-// defaultContainer specifies the default global container.
-var defaultContainer = NewContainer()
+// globalDeclaration specifies the global declaration.
+var globalDeclaration = NewDeclaration()
 
-// Provide calls the Provide method of the default container.
-func Provide(ctor Constructor) error {
-	return defaultContainer.Provide(ctor)
+// Declare declares the given function to call at the first global invocation.
+func Declare(f func()) error {
+	return globalDeclaration.Declare(f)
 }
 
-// MustProvide calls the MustProvide method of the default container.
-func MustProvide(ctor Constructor) {
-	defaultContainer.MustProvide(ctor)
-}
-
-// Apply calls the Apply method of the default container.
-func Apply(proc Processor) error {
-	return defaultContainer.Apply(proc)
-}
-
-// MustApply calls the MustApply method of the default container.
-func MustApply(proc Processor) {
-	defaultContainer.MustApply(proc)
-}
-
-// Invoke calls the Invoke method of the default container.
-func Invoke(exec Executor, bootstrappers ...Bootstrapper) error {
-	if err := callHooks(); err != nil {
-		return err
-	}
-	return defaultContainer.Invoke(exec, bootstrappers...)
-}
-
-// MustInvoke calls the MustInvoke method of the default container.
-func MustInvoke(exec Executor, bootstrappers ...Bootstrapper) {
-	if err := callHooks(); err != nil {
+// MustDeclare is a variant of the Declare that panics on error.
+func MustDeclare(f func()) struct{} {
+	if err := Declare(f); err != nil {
 		panic(err)
 	}
-	defaultContainer.MustInvoke(exec, bootstrappers...)
+	return struct{}{}
+}
+
+// DeclareErrorProne declares the given error-prone function to call at the first global invocation.
+func DeclareErrorProne(f func() error) error {
+	return globalDeclaration.DeclareErrorProne(f)
+}
+
+// MustDeclareErrorProne is a variant of the DeclareErrorProne that panics on error.
+func MustDeclareErrorProne(f func() error) struct{} {
+	if err := DeclareErrorProne(f); err != nil {
+		panic(err)
+	}
+	return struct{}{}
+}
+
+// globalContainer specifies the global container.
+var globalContainer = NewContainer()
+
+// Provide calls the Provide method of the global container.
+func Provide(ctor Constructor) error {
+	return globalContainer.Provide(ctor)
+}
+
+// MustProvide is a variant of the Provide that panics on error.
+func MustProvide(ctor Constructor) {
+	if err := Provide(ctor); err != nil {
+		panic(err)
+	}
+}
+
+// Apply calls the Apply method of the global container.
+func Apply(proc Processor) error {
+	return globalContainer.Apply(proc)
+}
+
+// MustApply is a variant of the Apply that panics on error.
+func MustApply(proc Processor) {
+	if err := Apply(proc); err != nil {
+		panic(err)
+	}
+}
+
+// Invoke calls declared functions if not called yet and then
+// calls the Invoke method of the global container.
+func Invoke(exec Executor, bootstrappers ...Bootstrapper) error {
+	if err := globalDeclaration.Perform(); err != nil {
+		return err
+	}
+	return globalContainer.Invoke(exec, bootstrappers...)
+}
+
+// MustInvoke is a variant of the Invoke that panics on error.
+func MustInvoke(exec Executor, bootstrappers ...Bootstrapper) {
+	if err := Invoke(exec, bootstrappers...); err != nil {
+		panic(err)
+	}
 }

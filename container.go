@@ -83,7 +83,7 @@ func (c *Container) MustApply(proc Processor) {
 // Invoke applies given bootstrappers, resolves the dependency graph based on parameters
 // of the given executor using this container and then executes an activity. Dependencies
 // of each subsequent executor will be resolved dynamically before it's activity execution.
-func (c *Container) Invoke(exec Executor, bootstrappers ...Bootstrapper) error {
+func (c *Container) Invoke(exec Executor, bootstrappers ...Bootstrapper) (err error) {
 	if c == nil {
 		kerror.NPE()
 		return nil
@@ -92,7 +92,9 @@ func (c *Container) Invoke(exec Executor, bootstrappers ...Bootstrapper) error {
 		return kerror.New(kerror.EInvalid, "container cannot invoke nil executor")
 	}
 	arena := NewArena()
-	defer arena.MustFinalize()
+	defer func() {
+		err = kerror.Collect(err, arena.Finalize())
+	}()
 	for _, boot := range bootstrappers {
 		if boot == nil {
 			return kerror.New(kerror.EInvalid, "container cannot apply nil bootstrapper")
@@ -132,7 +134,9 @@ func (c *Container) get(arena *Arena, t reflect.Type) (reflect.Value, error) {
 			return reflect.Value{}, err
 		}
 	}
-	arena.MustRegister(t, obj, dtor)
+	if err := arena.Register(t, obj, dtor); err != nil {
+		return reflect.Value{}, err
+	}
 	return obj, nil
 }
 

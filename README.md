@@ -29,34 +29,37 @@ the automatic [Dependency Injection](https://en.wikipedia.org/wiki/Dependency_in
 ctr := kinit.NewContainer()
 ```
 
-A local container must be filled up with *constructors* and *processors* manually whereas the global one can be
-filled up when initializing packages. You may use init functions fot this, but it's recommended to use *hooks*.
+A local container must be filled up with *constructors* and *processors* manually whereas the global one
+can be filled up when initializing packages. You may use init functions fot this, but it's recommended
+to use *declared functions*.
 
-### Hooks
+### Declared functions
 
-Registered hooks will be called only when the global container starts an *invocation*. It's useful for libraries
-which may not perform container filling up operations if their entities just used manually.
+> Declared function replace hooks since version 0.3.0. Hooks were very badly designed and totally removed for now.
 
-To register a hook use `kinit.Hook` or `kinit.MustHook` method:
+Declared functions will be called only when the global container starts an *invocation* at the first time.
+It's useful for libraries which may not perform container filling up operations if their entities just used manually.
+
+To declare a function use `kinit.Declare` or `kinit.DeclareErrorProne` method:
 
 ```go
-kinit.Hook(func() error { /* fill up the global container here with returning error if occurred */ })
+kinit.Declare(func() { /* fill up the global container here */ })
 
-kinit.MustHook(func() { /* fill up the global container here */ })
+kinit.DeclareErrorProne(func() error { /* fill up the global container here with returning error if occurred */ })
 ```
 
-Both methods return an index of registered hook starting from zero. It is not very useful information, but
-you can use this fact to simplify syntax:
+There are also `kinit.MustDeclare` and `kinit.MustDeclareErrorProne` methods that panic on error. Both those methods
+return `struct{}`. It's not very informative result, but you can use this fact to simplify syntax:
 
 ```go
-var _ = kinit.MustHook(func() { ... })
+var _ = kinit.MustDeclare(func() { ... })
 ```
 
 instead of
 
 ```go
 func init() {
-	kinit.MustHook(func() { ... })
+	kinit.MustDeclare(func() { ... })
 }
 ```
 
