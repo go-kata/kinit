@@ -155,7 +155,7 @@ automatically destroyed using their destructors.
 
 When all dependencies of an activity are resolved, container executes it. Executed activity may provide other
 activity to continue invocation - its dependencies will be also resolved using the same arena. This process is
-called the *cascade injection*. When a currently executed activity doesn't provide a next activity to execute,
+called the *cascade initialization*. When a currently executed activity doesn't provide a next activity to execute,
 invocation ends.
 
 ### Executors
