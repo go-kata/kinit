@@ -36,8 +36,8 @@ to use *declared functions*.
 
 ### Declared functions
 
-Declared functions will be called only when the global container starts runs *functors* at the first time.
-It's useful for libraries which may not perform container filling up operations if their entities just used manually.
+Declared functions will be called only when the global container runs *functors* at the first time. It's useful
+for libraries which may not perform container filling up operations if their entities just used manually.
 
 To declare a function use `kinit.Declare` and `kinit.DeclareErrorProne` methods:
 
@@ -64,7 +64,7 @@ func init() {
 
 ### Constructors
 
-Constructors are entities which create objects (dependencies for injection in context of the DI). This library
+Constructors are entities that create objects (dependencies for injection in context of the DI). This library
 considers constructors to have the following interface:
 
 ```go
@@ -102,7 +102,7 @@ Just keep in mind that container uses a simple comparison of `reflect.Type` inst
 The **[KInitX](https://github.com/go-kata/kinitx)** library provides following constructor implementations:
 
 * **Constructor** is the function-based constructor.
-* **Opener** is the function-based constructor which creates an object that implements the `io.Closer` interface.
+* **Opener** is the function-based constructor that creates an object that implements the `io.Closer` interface.
   The object's `Close` method is treated as destructor.
 * **Initializer** is the memberwise initializer of a struct. It doesn't provide a destructor.
 
@@ -110,7 +110,7 @@ You can find more details in the documentation for the library.
 
 ### Processors
 
-Processors are entities which process already created objects. This library applies processors immediately after
+Processors are entities that process already created objects. This library applies processors immediately after
 object creation and before it will be injected as a dependency at the first time. It considers processors to have
 the following interface:
 
@@ -139,7 +139,8 @@ The **[KInitX](https://github.com/go-kata/kinitx)** library provides the functio
 
 ### Functors
 
-Functors are run in the container. This library considers functors to have the following interface:
+Functors represent functions to be run in the container. This library considers functors to have the following
+interface:
 
 ```go
 type Functor interface {
@@ -160,7 +161,7 @@ To run functors in container use `kinit.Run` method (or `ctr.Run` for local cont
 At the start of run container creates so-called *arena* that contains all created objects (only one object
 for each type). If some object that is required as a dependency is already on the arena it will be used, otherwise
 it will be created and processed at first. All objects that are on the arena at the end of run will be automatically
-destroyed using their destructors.
+destroyed.
 
 Container runs given functors sequentially resolving their dependencies recursively using registered constructors
 and processors. If functor (let's call it *branched*) returns further functors, container runs all of them before
@@ -169,9 +170,8 @@ continue running functors that follows the branched one. This is called the *Dep
 The **[KInitX](https://github.com/go-kata/kinitx)** library provides following functor implementations:
 
 * **Functor** is the function-based functor.
-* **Injector** is the provider of object that is registered on the arena for direct use instead of being created
-  during the dependency tree resolution. The provided object has no destructor to call at the end of execution
-  and must be destroyed manually.
+* **Injector** is the provider of object that is directly registered on the arena instead of being created
+  during the dependency tree resolution. The provided object must be destroyed manually after run ends.
 
 ### Putting all together
 
