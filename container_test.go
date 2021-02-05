@@ -1,6 +1,7 @@
 package kinit
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/go-kata/kdone"
@@ -50,30 +51,32 @@ func TestContainer(t *testing.T) {
 			return
 		}
 	}()
-	c := NewContainer()
-	c.MustProvide(newTestConstructor(func() (*int, kdone.Destructor, error) { return &counter, kdone.Noop, nil }))
-	c.MustApply(newTestProcessor(processTestCounter))
-	c.MustProvide(newTestConstructor(newTestObject1))
-	c.MustProvide(newTestConstructor(newTestObject2))
-	c.MustInvoke(
-		newTestExecutor(func(*testObject1) (Executor, error) {
+	ctr := NewContainer()
+	ctr.MustProvide(newTestConstructor(func() (*int, kdone.Destructor, error) { return &counter, kdone.Noop, nil }))
+	ctr.MustAttach(newTestProcessor(processTestCounter))
+	ctr.MustProvide(newTestConstructor(newTestObject1))
+	ctr.MustProvide(newTestConstructor(newTestObject2))
+	ctr.MustRun(
+		newTestFunctor(func(runtime *Runtime) ([]Functor, error) {
+			return nil, runtime.Register(reflect.TypeOf(t), reflect.ValueOf(t), kdone.Noop)
+		}),
+		newTestFunctor(func(*testObject1) ([]Functor, error) {
 			if counter != 2 {
 				return nil, kerror.Newf(nil, "counter must be 2, %d found", counter)
 			}
-			return newTestExecutor(func(*testObject2) (Executor, error) {
+			return []Functor{newTestFunctor(func(*testObject2) ([]Functor, error) {
 				if counter != 0 {
 					return nil, kerror.Newf(nil, "counter must be 0, %d found", counter)
 				}
 				return nil, nil
-			}), nil
+			})}, nil
 		}),
-		newTestBootstrapper(t),
 	)
 }
 
-func TestContainer_ProvideWithNilConstructor(t *testing.T) {
-	c := NewContainer()
-	err := c.Provide(nil)
+func TestContainer_Provide__NilConstructor(t *testing.T) {
+	ctr := NewContainer()
+	err := ctr.Provide(nil)
 	t.Logf("%+v", err)
 	if kerror.ClassOf(err) != kerror.EInvalid {
 		t.Fail()
@@ -81,9 +84,9 @@ func TestContainer_ProvideWithNilConstructor(t *testing.T) {
 	}
 }
 
-func TestContainer_ProvideWithBrokenConstructor(t *testing.T) {
-	c := NewContainer()
-	err := c.Provide(testBrokenConstructor{})
+func TestContainer_Provide__ConstructorWithBrokenType(t *testing.T) {
+	ctr := NewContainer()
+	err := ctr.Provide(testConstructorWithBrokenType{})
 	t.Logf("%+v", err)
 	if kerror.ClassOf(err) != kerror.EInvalid {
 		t.Fail()
@@ -91,10 +94,10 @@ func TestContainer_ProvideWithBrokenConstructor(t *testing.T) {
 	}
 }
 
-func TestContainer_ProvideWithAmbiguousConstructor(t *testing.T) {
-	c := NewContainer()
-	c.MustProvide(newTestConstructor(newTestObject1))
-	err := c.Provide(newTestConstructor(newTestObject1))
+func TestContainer_Provide__AmbiguousConstructor(t *testing.T) {
+	ctr := NewContainer()
+	ctr.MustProvide(newTestConstructor(newTestObject1))
+	err := ctr.Provide(newTestConstructor(newTestObject1))
 	t.Logf("%+v", err)
 	if kerror.ClassOf(err) != kerror.EAmbiguous {
 		t.Fail()
@@ -102,9 +105,9 @@ func TestContainer_ProvideWithAmbiguousConstructor(t *testing.T) {
 	}
 }
 
-func TestContainer_ApplyWithNilProcessor(t *testing.T) {
-	c := NewContainer()
-	err := c.Apply(nil)
+func TestContainer_Attach__NilProcessor(t *testing.T) {
+	ctr := NewContainer()
+	err := ctr.Attach(nil)
 	t.Logf("%+v", err)
 	if kerror.ClassOf(err) != kerror.EInvalid {
 		t.Fail()
@@ -112,9 +115,9 @@ func TestContainer_ApplyWithNilProcessor(t *testing.T) {
 	}
 }
 
-func TestContainer_ApplyWithBrokenProcessor(t *testing.T) {
-	c := NewContainer()
-	err := c.Apply(testBrokenProcessor{})
+func TestContainer_Attach__ProcessorWithBrokenType(t *testing.T) {
+	ctr := NewContainer()
+	err := ctr.Attach(testProcessorWithBrokenType{})
 	t.Logf("%+v", err)
 	if kerror.ClassOf(err) != kerror.EInvalid {
 		t.Fail()
@@ -122,9 +125,9 @@ func TestContainer_ApplyWithBrokenProcessor(t *testing.T) {
 	}
 }
 
-func TestContainer_InvokeWithNilExecutor(t *testing.T) {
-	c := NewContainer()
-	err := c.Invoke(nil)
+func TestContainer_Run__NilFunctor(t *testing.T) {
+	ctr := NewContainer()
+	err := ctr.Run(nil)
 	t.Logf("%+v", err)
 	if kerror.ClassOf(err) != kerror.EInvalid {
 		t.Fail()
@@ -132,9 +135,27 @@ func TestContainer_InvokeWithNilExecutor(t *testing.T) {
 	}
 }
 
-func TestContainer_InvokeWithNilBootstrapper(t *testing.T) {
-	c := NewContainer()
-	err := c.Invoke(newTestExecutor(func() (Executor, error) { return nil, nil }), nil)
+func TestContainer_Run__ErrorProneFunctor(t *testing.T) {
+	ctr := NewContainer()
+	err := ctr.Run(
+		newTestFunctor(func() ([]Functor, error) {
+			return nil, kerror.New(kerror.ECustom, "test error")
+		}),
+	)
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.ECustom {
+		t.Fail()
+		return
+	}
+}
+
+func TestContainer_Run__NilSubsequentFunctor(t *testing.T) {
+	ctr := NewContainer()
+	err := ctr.Run(
+		newTestFunctor(func() ([]Functor, error) {
+			return []Functor{nil}, nil
+		}),
+	)
 	t.Logf("%+v", err)
 	if kerror.ClassOf(err) != kerror.EInvalid {
 		t.Fail()
@@ -142,14 +163,65 @@ func TestContainer_InvokeWithNilBootstrapper(t *testing.T) {
 	}
 }
 
-func TestContainer_InvokeWithBrokenGraph(t *testing.T) {
-	c := NewContainer()
-	c.MustProvide(newTestConstructor(newTestObject1))
-	err := c.Invoke(
-		newTestExecutor(func(*testObject1) (Executor, error) {
+func TestContainer_Run__ErrorProneSubsequentFunctor(t *testing.T) {
+	ctr := NewContainer()
+	err := ctr.Run(
+		newTestFunctor(func() ([]Functor, error) {
+			return []Functor{newTestFunctor(func() ([]Functor, error) {
+				return nil, kerror.New(kerror.ECustom, "test error")
+			})}, nil
+		}),
+	)
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.ECustom {
+		t.Fail()
+		return
+	}
+}
+
+func TestContainer_Run__ErrorProneConstructor(t *testing.T) {
+	ctr := NewContainer()
+	ctr.MustProvide(newTestConstructor(func() (int, kdone.Destructor, error) {
+		return 0, kdone.Noop, kerror.New(kerror.ECustom, "test error")
+	}))
+	err := ctr.Run(
+		newTestFunctor(func(int) ([]Functor, error) {
 			return nil, nil
 		}),
-		newTestBootstrapper(t),
+	)
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.ECustom {
+		t.Fail()
+		return
+	}
+}
+
+func TestContainer_Run__ErrorProneProcessor(t *testing.T) {
+	ctr := NewContainer()
+	ctr.MustProvide(newTestConstructor(func() (int, kdone.Destructor, error) {
+		return 1, kdone.Noop, nil
+	}))
+	ctr.MustAttach(newTestProcessor(func(int) error {
+		return kerror.New(kerror.ECustom, "test error")
+	}))
+	err := ctr.Run(
+		newTestFunctor(func(int) ([]Functor, error) {
+			return nil, nil
+		}),
+	)
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.ECustom {
+		t.Fail()
+		return
+	}
+}
+
+func TestContainer_Run__BrokenGraph(t *testing.T) {
+	ctr := NewContainer()
+	err := ctr.Run(
+		newTestFunctor(func(int) ([]Functor, error) {
+			return nil, nil
+		}),
 	)
 	t.Logf("%+v", err)
 	if kerror.ClassOf(err) != kerror.ENotFound {
@@ -158,38 +230,87 @@ func TestContainer_InvokeWithBrokenGraph(t *testing.T) {
 	}
 }
 
+func TestContainer_Run__ConstructorWithBrokenParameters(t *testing.T) {
+	ctr := NewContainer()
+	ctr.MustProvide(testConstructorWithBrokenParameters{})
+	err := ctr.Run(
+		newTestFunctor(func(int) ([]Functor, error) {
+			return nil, nil
+		}),
+	)
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.EInvalid {
+		t.Fail()
+		return
+	}
+}
+
+func TestContainer_Run__ConstructorWithBrokenDestructor(t *testing.T) {
+	ctr := NewContainer()
+	ctr.MustProvide(testConstructorWithBrokenDestructor{})
+	err := ctr.Run(
+		newTestFunctor(func(int) ([]Functor, error) {
+			return nil, nil
+		}),
+	)
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.EInvalid {
+		t.Fail()
+		return
+	}
+}
+
+func TestContainer_Run__ProcessorWithBrokenParameters(t *testing.T) {
+	ctr := NewContainer()
+	ctr.MustProvide(newTestConstructor(func() (int, kdone.Destructor, error) {
+		return 1, kdone.Noop, nil
+	}))
+	ctr.MustAttach(testProcessorWithBrokenParameters{})
+	err := ctr.Run(
+		newTestFunctor(func(int) ([]Functor, error) {
+			return nil, nil
+		}),
+	)
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.EInvalid {
+		t.Fail()
+		return
+	}
+}
+
+func TestContainer_Run__FunctorWithBrokenParameters(t *testing.T) {
+	ctr := NewContainer()
+	err := ctr.Run(testFunctorWithBrokenParameters{})
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.EInvalid {
+		t.Fail()
+		return
+	}
+}
+
 func TestNilContainer_Provide(t *testing.T) {
-	defer func() {
-		v := recover()
-		t.Logf("%+v", v)
-		if v == nil {
-			t.Fail()
-			return
-		}
-	}()
-	_ = (*Container)(nil).Provide(newTestConstructor(newTestObject1))
+	err := (*Container)(nil).Provide(newTestConstructor(newTestObject1))
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.ENil {
+		t.Fail()
+		return
+	}
 }
 
-func TestNilContainer_Apply(t *testing.T) {
-	defer func() {
-		v := recover()
-		t.Logf("%+v", v)
-		if v == nil {
-			t.Fail()
-			return
-		}
-	}()
-	_ = (*Container)(nil).Apply(newTestProcessor(processTestCounter))
+func TestNilContainer_Attach(t *testing.T) {
+	err := (*Container)(nil).Attach(newTestProcessor(processTestCounter))
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.ENil {
+		t.Fail()
+		return
+	}
 }
 
-func TestNilContainer_Invoke(t *testing.T) {
-	defer func() {
-		v := recover()
-		t.Logf("%+v", v)
-		if v == nil {
-			t.Fail()
-			return
-		}
-	}()
-	_ = (*Container)(nil).Invoke(newTestExecutor(func() (Executor, error) { return nil, nil }))
+func TestNilContainer_Run(t *testing.T) {
+	err := (*Container)(nil).Run()
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.ENil {
+		t.Fail()
+		return
+	}
 }

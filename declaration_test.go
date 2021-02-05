@@ -14,7 +14,7 @@ func TestDeclaration(t *testing.T) {
 		t.Fail()
 		return
 	}
-	if err := d.Perform(); err != nil {
+	if err := d.Fulfill(); err != nil {
 		t.Logf("%+v", err)
 		t.Fail()
 		return
@@ -25,7 +25,7 @@ func TestDeclaration(t *testing.T) {
 	}
 }
 
-func TestDeclarationWithError(t *testing.T) {
+func TestDeclaration__Error(t *testing.T) {
 	d := NewDeclaration()
 	var c int
 	d.MustDeclareErrorProne(func() error {
@@ -33,7 +33,7 @@ func TestDeclarationWithError(t *testing.T) {
 		return kerror.New(nil, "test error")
 	})
 	d.MustDeclare(func() { c++ })
-	err := d.Perform()
+	err := d.Fulfill()
 	t.Logf("%+v", err)
 	if err == nil {
 		t.Fail()
@@ -45,7 +45,7 @@ func TestDeclarationWithError(t *testing.T) {
 	}
 }
 
-func TestDeclaration_DeclareWithNilFunction(t *testing.T) {
+func TestDeclaration_Declare__NilFunction(t *testing.T) {
 	d := NewDeclaration()
 	err := d.Declare(nil)
 	t.Logf("%+v", err)
@@ -55,7 +55,18 @@ func TestDeclaration_DeclareWithNilFunction(t *testing.T) {
 	}
 }
 
-func TestDeclaration_DeclareErrorProneWithNilFunction(t *testing.T) {
+func TestDeclaration_Declare__Fulfilled(t *testing.T) {
+	d := NewDeclaration()
+	d.MustFulfill()
+	err := d.Declare(func() {})
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.EIllegal {
+		t.Fail()
+		return
+	}
+}
+
+func TestDeclaration_DeclareErrorProne__NilFunction(t *testing.T) {
 	d := NewDeclaration()
 	err := d.DeclareErrorProne(nil)
 	t.Logf("%+v", err)
@@ -65,10 +76,10 @@ func TestDeclaration_DeclareErrorProneWithNilFunction(t *testing.T) {
 	}
 }
 
-func TestDeclaration_DeclareWhenPerformed(t *testing.T) {
+func TestDeclaration_DeclareErrorProne__Fulfilled(t *testing.T) {
 	d := NewDeclaration()
-	d.MustPerform()
-	err := d.Declare(func() {})
+	d.MustFulfill()
+	err := d.DeclareErrorProne(func() error { return nil })
 	t.Logf("%+v", err)
 	if kerror.ClassOf(err) != kerror.EIllegal {
 		t.Fail()
@@ -76,44 +87,54 @@ func TestDeclaration_DeclareWhenPerformed(t *testing.T) {
 	}
 }
 
-func TestDeclaration_PerformWhenPerformed(t *testing.T) {
+func TestDeclaration_Fulfill__Fulfilled(t *testing.T) {
 	d := NewDeclaration()
-	d.MustPerform()
-	err := d.Perform()
+	d.MustFulfill()
+	err := d.Fulfill()
 	t.Logf("%+v", err)
 	if kerror.ClassOf(err) != kerror.EIllegal {
+		t.Fail()
+		return
+	}
+}
+
+func TestDeclaration_Fulfilled(t *testing.T) {
+	d := NewDeclaration()
+	d.MustFulfill()
+	if !d.Fulfilled() {
 		t.Fail()
 		return
 	}
 }
 
 func TestNilDeclaration_Declare(t *testing.T) {
-	defer func() {
-		v := recover()
-		t.Logf("%+v", v)
-		if v == nil {
-			t.Fail()
-			return
-		}
-	}()
-	_ = (*Declaration)(nil).Declare(func() {})
+	err := (*Declaration)(nil).Declare(func() {})
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.ENil {
+		t.Fail()
+		return
+	}
 }
 
 func TestNilDeclaration_DeclareErrorProne(t *testing.T) {
-	defer func() {
-		v := recover()
-		t.Logf("%+v", v)
-		if v == nil {
-			t.Fail()
-			return
-		}
-	}()
-	_ = (*Declaration)(nil).DeclareErrorProne(func() error { return nil })
+	err := (*Declaration)(nil).DeclareErrorProne(func() error { return nil })
+	t.Logf("%+v", err)
+	if kerror.ClassOf(err) != kerror.ENil {
+		t.Fail()
+		return
+	}
 }
 
-func TestNilDeclaration_Perform(t *testing.T) {
-	if err := (*Declaration)(nil).Perform(); err != nil {
+func TestNilDeclaration_Fulfill(t *testing.T) {
+	if err := (*Declaration)(nil).Fulfill(); err != nil {
 		t.Logf("%+v", err)
+		t.Fail()
+		return
+	}
+}
+
+func TestNilDeclaration_Fulfilled(t *testing.T) {
+	if (*Declaration)(nil).Fulfilled() {
 		t.Fail()
 		return
 	}

@@ -1,8 +1,6 @@
 package kinit
 
-import (
-	"reflect"
-)
+import "reflect"
 
 // func(T, ...) error
 
@@ -43,16 +41,30 @@ func (p *testProcessor) Process(obj reflect.Value, a ...reflect.Value) error {
 	return err
 }
 
-type testBrokenProcessor struct{}
+type testProcessorWithBrokenType struct{}
 
-func (testBrokenProcessor) Type() reflect.Type {
+func (testProcessorWithBrokenType) Type() reflect.Type {
 	return nil
 }
 
-func (testBrokenProcessor) Parameters() []reflect.Type {
+func (testProcessorWithBrokenType) Parameters() []reflect.Type {
 	return nil
 }
 
-func (testBrokenProcessor) Process(obj reflect.Value, a ...reflect.Value) error {
+func (testProcessorWithBrokenType) Process(obj reflect.Value, a ...reflect.Value) error {
+	return nil
+}
+
+type testProcessorWithBrokenParameters struct{}
+
+func (testProcessorWithBrokenParameters) Type() reflect.Type {
+	return reflect.TypeOf(1)
+}
+
+func (testProcessorWithBrokenParameters) Parameters() []reflect.Type {
+	return []reflect.Type{nil}
+}
+
+func (testProcessorWithBrokenParameters) Process(obj reflect.Value, a ...reflect.Value) error {
 	return nil
 }

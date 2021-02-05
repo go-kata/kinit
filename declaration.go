@@ -6,8 +6,8 @@ import "github.com/go-kata/kerror"
 type Declaration struct {
 	// functions specifies declared functions.
 	functions []func() error
-	// performed specifies whether were the declared functions called.
-	performed bool
+	// fulfilled specifies whether were the declared functions called.
+	fulfilled bool
 }
 
 // NewDeclaration returns a new declaration.
@@ -37,14 +37,13 @@ func (d *Declaration) MustDeclare(f func()) {
 // DeclareErrorProne appends the given function to this declaration.
 func (d *Declaration) DeclareErrorProne(f func() error) error {
 	if d == nil {
-		kerror.NPE()
-		return nil
+		return kerror.New(kerror.ENil, "nil declaration cannot declare function")
 	}
-	if d.performed {
-		return kerror.New(kerror.EIllegal, "declared functions already called")
+	if d.fulfilled {
+		return kerror.New(kerror.EIllegal, "declaration has already called declared functions")
 	}
 	if f == nil {
-		return kerror.New(kerror.EInvalid, "nil function cannot be declared")
+		return kerror.New(kerror.EInvalid, "declaration cannot declare nil function")
 	}
 	d.functions = append(d.functions, f)
 	return nil
@@ -57,15 +56,17 @@ func (d *Declaration) MustDeclareErrorProne(f func() error) {
 	}
 }
 
-// Perform calls declared functions.
-func (d *Declaration) Perform() error {
+// Fulfill calls declared functions.
+func (d *Declaration) Fulfill() error {
 	if d == nil {
 		return nil
 	}
-	if d.performed {
-		return kerror.New(kerror.EIllegal, "declared functions already called")
+	if d.fulfilled {
+		return kerror.New(kerror.EIllegal, "declaration has already called declared functions")
 	}
-	d.performed = true
+	defer func() {
+		d.fulfilled = true
+	}()
 	for _, f := range d.functions {
 		if err := f(); err != nil {
 			return err
@@ -74,9 +75,17 @@ func (d *Declaration) Perform() error {
 	return nil
 }
 
-// MustPerform is a variant of the Perform that panics on error.
-func (d *Declaration) MustPerform() {
-	if err := d.Perform(); err != nil {
+// MustFulfill is a variant of the Fulfill that panics on error.
+func (d *Declaration) MustFulfill() {
+	if err := d.Fulfill(); err != nil {
 		panic(err)
 	}
+}
+
+// Fulfilled returns boolean whether were the declared functions called.
+func (d *Declaration) Fulfilled() bool {
+	if d == nil {
+		return false
+	}
+	return d.fulfilled
 }

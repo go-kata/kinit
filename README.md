@@ -36,12 +36,10 @@ to use *declared functions*.
 
 ### Declared functions
 
-> Declared functions replace hooks since version 0.3.0. Hooks were very badly designed and totally removed for now.
-
-Declared functions will be called only when the global container starts an *invocation* at the first time.
+Declared functions will be called only when the global container starts runs *functors* at the first time.
 It's useful for libraries which may not perform container filling up operations if their entities just used manually.
 
-To declare a function use `kinit.Declare` or `kinit.DeclareErrorProne` method:
+To declare a function use `kinit.Declare` and `kinit.DeclareErrorProne` methods:
 
 ```go
 kinit.Declare(func() { /* fill up the global container here */ })
@@ -66,7 +64,7 @@ func init() {
 
 ### Constructors
 
-Constructors are entities which creates objects (dependencies for injection in context of the DI). This library
+Constructors are entities which create objects (dependencies for injection in context of the DI). This library
 considers constructors to have the following interface:
 
 ```go
@@ -105,14 +103,14 @@ The **[KInitX](https://github.com/go-kata/kinitx)** library provides following c
 
 * **Constructor** is the function-based constructor.
 * **Opener** is the function-based constructor which creates an object that implements the `io.Closer` interface.
-  The `Close` method is treated as object destructor.
-* **Initializer** is the memberwise initializer for structs that doesn't provide a destructor.
+  The object's `Close` method is treated as destructor.
+* **Initializer** is the memberwise initializer of a struct. It doesn't provide a destructor.
 
 You can find more details in the documentation for the library.
 
 ### Processors
 
-Processors are entities which processes already created objects. This library applies processors immediately after
+Processors are entities which process already created objects. This library applies processors immediately after
 object creation and before it will be injected as a dependency at the first time. It considers processors to have
 the following interface:
 
@@ -131,68 +129,49 @@ type Processor interface {
 Here `Type` returns a type of object to process, `Parameters` returns types of other objects required to this
 object processing (dependencies) and finally `Process` processes an object.
 
-To register a new processor in container use `kinit.Apply` method (or `ctr.Apply` for local containers).
-There are also `kinit.MustApply` method (or `ctr.MustApply` for local containers) that panics on error.
+To register a new processor in container use `kinit.Attach` method (or `ctr.Attach` for local containers).
+There are also `kinit.MustAttach` method (or `ctr.MustAttach` for local containers) that panics on error.
 
-Container allows to have an unlimited number of processors for each type but doesn't guarantee the order of their
-calling.
+Container allows to have an unlimited number of processors for each type but doesn't guarantee the order of
+their calling.
 
 The **[KInitX](https://github.com/go-kata/kinitx)** library provides the function-based processor implementation.
 
-### Invocation
+### Functors
 
-Invocation is the process of some activity execution resolving a dependency tree as roots of which are treated
-this activity dependencies.
-
-To perform an invocation use `kinit.Invoke` method (or `ctr.Invoke` for local containers). There are also
-`kinit.MustInvoke` method (or `ctr.MustInvoke` for local containers) that panics on error. Both methods
-require an *executor* and allow to pass one or more *bootstrappers*.
-
-At the start of invocation container creates so-called *arena* that contains all created objects (only one object
-for each type). If some object that is required as a dependency is already on the arena it will be used, otherwise
-it will be previously created and processed. All objects that are on the arena at the end of invocation will be
-automatically destroyed using their destructors.
-
-When all dependencies of an activity are resolved, container executes it. Executed activity may provide other
-activity to continue invocation - its dependencies will be also resolved using the same arena. This process is
-called the *cascade initialization*. When a currently executed activity doesn't provide a next activity to execute,
-invocation ends.
-
-### Executors
-
-Executors are representations of activities. This library considers executors to have the following interface:
+Functors are run in the container. This library considers functors to have the following interface:
 
 ```go
-type Executor interface {
+type Functor interface {
 	
 	Parameters() []reflect.Type
 	
-	Execute(a ...reflect.Value) (Executor, error)
+	Call(a ...reflect.Value) ([]Functor, error)
 	
 }
 ```
 
-Here `Parameters` returns type of objects required to activity execution (root dependencies) and `Execute` executes
-activity and may return a next executor to continue invocation.
+Here `Parameters` returns types of objects required to function running (dependencies) and `Call` calls a function
+and may return *further functors*.
 
-The **[KInitX](https://github.com/go-kata/kinitx)** library provides the function-based executor implementation.
+To run functors in container use `kinit.Run` method (or `ctr.Run` for local containers). There are also
+`kinit.MustRun` method (or `ctr.MustRun` for local containers) that panics on error.
 
-### Bootstrappers
+At the start of run container creates so-called *arena* that contains all created objects (only one object
+for each type). If some object that is required as a dependency is already on the arena it will be used, otherwise
+it will be created and processed at first. All objects that are on the arena at the end of run will be automatically
+destroyed using their destructors.
 
-Bootstrappers are special entities which allows the arena bootstrapping at the start of invocation. This library
-considers bootstrappers to have the following interface:
+Container runs given functors sequentially resolving their dependencies recursively using registered constructors
+and processors. If functor (let's call it *branched*) returns further functors, container runs all of them before
+continue running functors that follows the branched one. This is called the *Depth-First Run*.
 
-```go
-type Bootstrapper interface {
-	
-	Bootstrap(arena *kinit.Arena) error
-	
-}
-```
+The **[KInitX](https://github.com/go-kata/kinitx)** library provides following functor implementations:
 
-The **[KInitX](https://github.com/go-kata/kinitx)** library provides the bootstrapper implementation called *literal*.
-Literals are objects that are registered on the arena for direct use instead of being created during dependency tree
-resolution. Those objects have no destructors to call at the end of invocation - they must be destroyed manually.
+* **Functor** is the function-based functor.
+* **Injector** is the provider of object that is registered on the arena for direct use instead of being created
+  during the dependency tree resolution. The provided object has no destructor to call at the end of execution
+  and must be destroyed manually.
 
 ### Putting all together
 

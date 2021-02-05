@@ -50,16 +50,44 @@ func (c *testConstructor) Create(a ...reflect.Value) (reflect.Value, kdone.Destr
 	return obj, dtor, err
 }
 
-type testBrokenConstructor struct{}
+type testConstructorWithBrokenType struct{}
 
-func (testBrokenConstructor) Type() reflect.Type {
+func (testConstructorWithBrokenType) Type() reflect.Type {
 	return nil
 }
 
-func (testBrokenConstructor) Parameters() []reflect.Type {
+func (testConstructorWithBrokenType) Parameters() []reflect.Type {
 	return nil
 }
 
-func (testBrokenConstructor) Create(a ...reflect.Value) (reflect.Value, kdone.Destructor, error) {
+func (testConstructorWithBrokenType) Create(a ...reflect.Value) (reflect.Value, kdone.Destructor, error) {
+	return reflect.Value{}, nil, nil
+}
+
+type testConstructorWithBrokenParameters struct{}
+
+func (testConstructorWithBrokenParameters) Type() reflect.Type {
+	return reflect.TypeOf(1)
+}
+
+func (testConstructorWithBrokenParameters) Parameters() []reflect.Type {
+	return []reflect.Type{nil}
+}
+
+func (testConstructorWithBrokenParameters) Create(a ...reflect.Value) (reflect.Value, kdone.Destructor, error) {
+	return reflect.Value{}, nil, nil
+}
+
+type testConstructorWithBrokenDestructor struct{}
+
+func (testConstructorWithBrokenDestructor) Type() reflect.Type {
+	return reflect.TypeOf(1)
+}
+
+func (testConstructorWithBrokenDestructor) Parameters() []reflect.Type {
+	return nil
+}
+
+func (testConstructorWithBrokenDestructor) Create(a ...reflect.Value) (reflect.Value, kdone.Destructor, error) {
 	return reflect.Value{}, nil, nil
 }

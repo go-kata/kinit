@@ -5,6 +5,8 @@ import "reflect"
 // Executor represents an activity executor.
 //
 // The usual identifier for variables of this type is exec.
+//
+// Deprecated: since 0.4.0, use Functor instead.
 type Executor interface {
 	// Parameters returns types of objects this executor depends on.
 	Parameters() []reflect.Type
