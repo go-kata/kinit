@@ -4,6 +4,8 @@
 [![codecov](https://codecov.io/gh/go-kata/kinit/branch/master/graph/badge.svg?token=NBFR4LKON8)](https://codecov.io/gh/go-kata/kinit)
 [![Report Card](https://goreportcard.com/badge/github.com/go-kata/kinit)](https://goreportcard.com/report/github.com/go-kata/kinit)
 
+**[Usage examples](https://github.com/go-kata/examples)**
+
 ## Installation
 
 `go get github.com/go-kata/kinit`
