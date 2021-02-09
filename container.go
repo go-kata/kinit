@@ -78,6 +78,53 @@ func (c *Container) MustAttach(proc Processor) {
 	}
 }
 
+// Lookup returns constructor and processors that are registered for the given type in this container.
+//
+// Nil constructor indicates that there are no registered constructor for the type.
+func (c *Container) Lookup(t reflect.Type) (Constructor, []Processor) {
+	if c == nil || t == nil {
+		return nil, nil
+	}
+	ctor := c.constructors[t]
+	var processors []Processor
+	if pp, ok := c.processors[t]; ok {
+		processors = make([]Processor, len(pp))
+		copy(processors, pp)
+	}
+	return ctor, processors
+}
+
+// Explore calls f for each type presented in this container.
+//
+// Nil constructor indicates that there are no registered constructor for the type
+// but registered processors are there.
+//
+// The traversal will be broken if f will return false.
+func (c *Container) Explore(f func(reflect.Type, Constructor, []Processor) (next bool)) {
+	if c == nil || f == nil {
+		return
+	}
+	for t, ctor := range c.constructors {
+		var processors []Processor
+		if pp, ok := c.processors[t]; ok {
+			processors = make([]Processor, len(pp))
+			copy(processors, pp)
+		}
+		if !f(t, ctor, processors) {
+			return
+		}
+	}
+	for t, pp := range c.processors {
+		if _, ok := c.constructors[t]; !ok {
+			processors := make([]Processor, len(pp))
+			copy(processors, pp)
+			if !f(t, nil, processors) {
+				return
+			}
+		}
+	}
+}
+
 // Run runs given functors sequentially resolving their dependencies recursively using this container.
 // If some functor returns further functors all of them will be run before the running of functors that follows it.
 //
@@ -94,10 +141,10 @@ func (c *Container) Run(functors ...Functor) (err error) {
 	if err != nil {
 		return err
 	}
-	if err := arena.Register(reflect.TypeOf(runtime), reflect.ValueOf(runtime), kdone.Noop); err != nil {
+	if err := arena.Put(reflect.TypeOf(runtime), reflect.ValueOf(runtime), kdone.Noop); err != nil {
 		return err
 	}
-	return c.run(arena, functors...)
+	return c.run(arena, functors)
 }
 
 // MustRun is a variant of the Run that panics on error.
@@ -108,12 +155,12 @@ func (c *Container) MustRun(functors ...Functor) {
 }
 
 // run runs given functors using the given arena.
-func (c *Container) run(arena *Arena, functors ...Functor) error {
+func (c *Container) run(arena *Arena, functors []Functor) error {
 	for _, fun := range functors {
 		if fun == nil {
 			return kerror.New(kerror.EInvalid, "container cannot run nil functor")
 		}
-		a, err := c.resolve(arena, fun.Parameters())
+		a, err := c.resolveTypes(arena, fun.Parameters())
 		if err != nil {
 			return err
 		}
@@ -121,47 +168,55 @@ func (c *Container) run(arena *Arena, functors ...Functor) error {
 		if err != nil {
 			return err
 		}
-		if err := c.run(arena, further...); err != nil {
+		if err := c.run(arena, further); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// resolve returns objects of given types. If object is already on the given arena, it will be used.
+// resolveType returns the object of the given type. If the object is already on the given arena, it will be used.
 // Otherwise it will be firstly created and processed using this container and registered on the arena.
-func (c *Container) resolve(arena *Arena, types []reflect.Type) ([]reflect.Value, error) {
+func (c *Container) resolveType(arena *Arena, t reflect.Type) (reflect.Value, error) {
+	if t == nil {
+		return reflect.Value{}, kerror.New(kerror.EInvalid, "container cannot resolve dependency of nil type")
+	}
+	if obj, ok := arena.Get(t); ok {
+		return obj, nil
+	}
+	ctor, ok := c.constructors[t]
+	if !ok {
+		return reflect.Value{}, kerror.Newf(kerror.ENotFound, "%s constructor is not registered", t)
+	}
+	a, err := c.resolveTypes(arena, ctor.Parameters())
+	if err != nil {
+		return reflect.Value{}, err
+	}
+	obj, dtor, err := ctor.Create(a...)
+	if err != nil {
+		return reflect.Value{}, err
+	}
+	for _, proc := range c.processors[t] {
+		a, err := c.resolveTypes(arena, proc.Parameters())
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		if err := proc.Process(obj, a...); err != nil {
+			return reflect.Value{}, err
+		}
+	}
+	if err := arena.Put(t, obj, dtor); err != nil {
+		return reflect.Value{}, err
+	}
+	return obj, nil
+}
+
+// resolveTypes resolves given types together.
+func (c *Container) resolveTypes(arena *Arena, types []reflect.Type) ([]reflect.Value, error) {
 	objects := make([]reflect.Value, len(types))
 	for i, t := range types {
-		if t == nil {
-			return nil, kerror.New(kerror.EInvalid, "container cannot resolve dependency of nil type")
-		}
-		if obj, ok := arena.Get(t); ok {
-			objects[i] = obj
-			continue
-		}
-		ctor, ok := c.constructors[t]
-		if !ok {
-			return nil, kerror.Newf(kerror.ENotFound, "%s constructor is not registered", t)
-		}
-		a, err := c.resolve(arena, ctor.Parameters())
+		obj, err := c.resolveType(arena, t)
 		if err != nil {
-			return nil, err
-		}
-		obj, dtor, err := ctor.Create(a...)
-		if err != nil {
-			return nil, err
-		}
-		for _, proc := range c.processors[t] {
-			a, err := c.resolve(arena, proc.Parameters())
-			if err != nil {
-				return nil, err
-			}
-			if err := proc.Process(obj, a...); err != nil {
-				return nil, err
-			}
-		}
-		if err := arena.Register(t, obj, dtor); err != nil {
 			return nil, err
 		}
 		objects[i] = obj

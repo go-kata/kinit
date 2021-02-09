@@ -13,19 +13,19 @@ func TestArena(t *testing.T) {
 	defer parent1.MustFinalize()
 	x := int16(1)
 	xt := reflect.TypeOf(x)
-	parent1.MustRegister(xt, reflect.ValueOf(x), kdone.Noop)
+	parent1.MustPut(xt, reflect.ValueOf(x), kdone.Noop)
 
 	parent2 := NewArena()
 	defer parent2.MustFinalize()
 	y := int32(1)
 	yt := reflect.TypeOf(y)
-	parent2.MustRegister(yt, reflect.ValueOf(y), kdone.Noop)
+	parent2.MustPut(yt, reflect.ValueOf(y), kdone.Noop)
 
 	arena := NewArena(parent1, parent2)
 	defer arena.MustFinalize()
 	z := int64(1)
 	zt := reflect.TypeOf(z)
-	arena.MustRegister(zt, reflect.ValueOf(z), kdone.Noop)
+	arena.MustPut(zt, reflect.ValueOf(z), kdone.Noop)
 
 	if obj, ok := arena.Get(xt); !ok || obj.Interface() != x {
 		t.Fail()
@@ -46,13 +46,13 @@ func TestArena__SameType(t *testing.T) {
 	defer parent.MustFinalize()
 	x := 1
 	xt := reflect.TypeOf(x)
-	parent.MustRegister(xt, reflect.ValueOf(x), kdone.Noop)
+	parent.MustPut(xt, reflect.ValueOf(x), kdone.Noop)
 
 	arena := NewArena(parent)
 	defer arena.MustFinalize()
 	y := 2
 	yt := reflect.TypeOf(y)
-	arena.MustRegister(yt, reflect.ValueOf(y), kdone.Noop)
+	arena.MustPut(yt, reflect.ValueOf(y), kdone.Noop)
 
 	if obj, ok := arena.Get(yt); !ok || obj.Interface() != y {
 		t.Fail()
@@ -65,7 +65,7 @@ func TestArena__NilParent(t *testing.T) {
 	defer parent.MustFinalize()
 	x := 1
 	xt := reflect.TypeOf(x)
-	parent.MustRegister(xt, reflect.ValueOf(x), kdone.Noop)
+	parent.MustPut(xt, reflect.ValueOf(x), kdone.Noop)
 
 	arena := NewArena(nil, parent)
 	defer arena.MustFinalize()
@@ -80,13 +80,13 @@ func TestArena__FinalizedParent(t *testing.T) {
 	parent := NewArena()
 	x := int16(1)
 	xt := reflect.TypeOf(x)
-	parent.MustRegister(xt, reflect.ValueOf(x), kdone.Noop)
+	parent.MustPut(xt, reflect.ValueOf(x), kdone.Noop)
 
 	arena := NewArena(parent)
 	defer arena.MustFinalize()
 	y := int64(1)
 	yt := reflect.TypeOf(y)
-	arena.MustRegister(yt, reflect.ValueOf(y), kdone.Noop)
+	arena.MustPut(yt, reflect.ValueOf(y), kdone.Noop)
 
 	parent.MustFinalize()
 
@@ -101,10 +101,10 @@ func TestArena__FinalizedParent(t *testing.T) {
 	}
 }
 
-func TestArena_Register__NilObject(t *testing.T) {
+func TestArena_Put__NilObject(t *testing.T) {
 	arena := NewArena()
 	defer arena.MustFinalize()
-	err := arena.Register(nil, reflect.Value{}, kdone.Noop)
+	err := arena.Put(nil, reflect.Value{}, kdone.Noop)
 	t.Logf("%+v", err)
 	if kerror.ClassOf(err) != kerror.EInvalid {
 		t.Fail()
@@ -112,11 +112,11 @@ func TestArena_Register__NilObject(t *testing.T) {
 	}
 }
 
-func TestArena_Register__NilDestructor(t *testing.T) {
+func TestArena_Put__NilDestructor(t *testing.T) {
 	arena := NewArena()
 	defer arena.MustFinalize()
 	x := 1
-	err := arena.Register(reflect.TypeOf(x), reflect.ValueOf(x), nil)
+	err := arena.Put(reflect.TypeOf(x), reflect.ValueOf(x), nil)
 	t.Logf("%+v", err)
 	if kerror.ClassOf(err) != kerror.EInvalid {
 		t.Fail()
@@ -124,14 +124,14 @@ func TestArena_Register__NilDestructor(t *testing.T) {
 	}
 }
 
-func TestArena_Register__AmbiguousObject(t *testing.T) {
+func TestArena_Put__AmbiguousObject(t *testing.T) {
 	arena := NewArena()
 	defer arena.MustFinalize()
 	x := 1
 	xt := reflect.TypeOf(x)
 	xv := reflect.ValueOf(x)
-	arena.MustRegister(xt, xv, kdone.Noop)
-	err := arena.Register(xt, xv, kdone.Noop)
+	arena.MustPut(xt, xv, kdone.Noop)
+	err := arena.Put(xt, xv, kdone.Noop)
 	t.Logf("%+v", err)
 	if kerror.ClassOf(err) != kerror.EAmbiguous {
 		t.Fail()
@@ -139,11 +139,11 @@ func TestArena_Register__AmbiguousObject(t *testing.T) {
 	}
 }
 
-func TestArena_Register__Finalized(t *testing.T) {
+func TestArena_Put__Finalized(t *testing.T) {
 	arena := NewArena()
 	arena.MustFinalize()
 	x := 1
-	err := arena.Register(reflect.TypeOf(x), reflect.ValueOf(x), nil)
+	err := arena.Put(reflect.TypeOf(x), reflect.ValueOf(x), nil)
 	t.Logf("%+v", err)
 	if kerror.ClassOf(err) != kerror.EIllegal {
 		t.Fail()
@@ -155,7 +155,7 @@ func TestArena_Get__NilType(t *testing.T) {
 	arena := NewArena()
 	defer arena.MustFinalize()
 	x := 1
-	arena.MustRegister(reflect.TypeOf(x), reflect.ValueOf(x), kdone.Noop)
+	arena.MustPut(reflect.TypeOf(x), reflect.ValueOf(x), kdone.Noop)
 	if obj, ok := arena.Get(nil); ok {
 		t.Logf("%+v", obj)
 		t.Fail()
@@ -174,7 +174,7 @@ func TestArena_Finalize(t *testing.T) {
 	arena := NewArena()
 	defer arena.MustFinalize()
 	x := 1
-	arena.MustRegister(reflect.TypeOf(x), reflect.ValueOf(x), kdone.DestructorFunc(func() error {
+	arena.MustPut(reflect.TypeOf(x), reflect.ValueOf(x), kdone.DestructorFunc(func() error {
 		c -= x
 		return nil
 	}))
@@ -200,8 +200,8 @@ func TestArena_Finalized(t *testing.T) {
 	}
 }
 
-func TestNilArena_Register(t *testing.T) {
-	err := (*Arena)(nil).Register(nil, reflect.Value{}, nil)
+func TestNilArena_Put(t *testing.T) {
+	err := (*Arena)(nil).Put(nil, reflect.Value{}, nil)
 	t.Logf("%+v", err)
 	if kerror.ClassOf(err) != kerror.ENil {
 		t.Fail()

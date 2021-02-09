@@ -38,17 +38,17 @@ func MustNewRuntime(ctr *Container, arena *Arena) *Runtime {
 	return r
 }
 
-// Register registers the given object on the associated arena.
-func (r *Runtime) Register(t reflect.Type, obj reflect.Value, dtor kdone.Destructor) error {
+// Put registers the given object on the associated arena.
+func (r *Runtime) Put(t reflect.Type, obj reflect.Value, dtor kdone.Destructor) error {
 	if r == nil {
 		return kerror.New(kerror.ENil, "nil runtime cannot register object")
 	}
-	return r.arena.Register(t, obj, dtor)
+	return r.arena.Put(t, obj, dtor)
 }
 
-// MustRegister is a variant of the Register that panics on error.
-func (r *Runtime) MustRegister(t reflect.Type, obj reflect.Value, dtor kdone.Destructor) {
-	if err := r.Register(t, obj, dtor); err != nil {
+// MustPut is a variant of the Put that panics on error.
+func (r *Runtime) MustPut(t reflect.Type, obj reflect.Value, dtor kdone.Destructor) {
+	if err := r.Put(t, obj, dtor); err != nil {
 		panic(err)
 	}
 }
@@ -67,10 +67,10 @@ func (r *Runtime) Run(functors ...Functor) (err error) {
 	if err != nil {
 		return err
 	}
-	if err := arena.Register(reflect.TypeOf(runtime), reflect.ValueOf(runtime), kdone.Noop); err != nil {
+	if err := arena.Put(reflect.TypeOf(runtime), reflect.ValueOf(runtime), kdone.Noop); err != nil {
 		return err
 	}
-	return r.container.run(arena, functors...)
+	return r.container.run(arena, functors)
 }
 
 // MustRun is a variant of Run that panics on error.

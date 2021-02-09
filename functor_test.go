@@ -11,15 +11,15 @@ type testFunctor struct {
 
 func newTestFunctor(x interface{}) *testFunctor {
 	ft := reflect.TypeOf(x)
-	r := &testFunctor{
+	f := &testFunctor{
 		f: reflect.ValueOf(x),
 	}
 	numIn := ft.NumIn()
-	r.in = make([]reflect.Type, numIn)
+	f.in = make([]reflect.Type, numIn)
 	for i := 0; i < numIn; i++ {
-		r.in[i] = ft.In(i)
+		f.in[i] = ft.In(i)
 	}
-	return r
+	return f
 }
 
 func (f *testFunctor) Parameters() []reflect.Type {

@@ -25,51 +25,20 @@ but when version changes `v0.1.1` to `v0.2.0` this means that the last version b
 ## How to use
 
 This library provides the global [IoC](https://en.wikipedia.org/wiki/Inversion_of_control) container which does
-the automatic [Dependency Injection](https://en.wikipedia.org/wiki/Dependency_injection). If you need a local one
-(e.g. for tests), you can create it as following:
+the automatic [Dependency Injection](https://en.wikipedia.org/wiki/Dependency_injection):
+
+```go
+kinit.Global()
+```
+
+If you need a local one (e.g. for tests), you can create it as following:
 
 ```go
 ctr := kinit.NewContainer()
 ```
 
 A local container must be filled up with *constructors* and *processors* manually whereas the global one
-can be filled up when initializing packages. You may use init functions for this, but it's recommended
-to use *declared functions*.
-
-> Further, when referring to the *container*, the global container is meant. To use some method for a
-> local container just replace `kinit.FunctionName` to `ctr.FunctionName`.
-
-### Declared functions
-
-Declared functions will be called only when the container runs *functors* at the first time. It's useful
-for libraries which may not perform container filling up operations if their entities just used manually.
-
-To declare a function use `kinit.Declare` and `kinit.DeclareErrorProne` methods:
-
-```go
-kinit.Declare(func() { /* fill up the container here */ })
-
-kinit.DeclareErrorProne(func() error { /* fill up the container here with returning error if occurred */ })
-```
-
-There are also `kinit.MustDeclare` and `kinit.MustDeclareErrorProne` methods that panic on error. Both methods
-return `struct{}` - it's not very informative result, but you can use this fact to simplify syntax:
-
-```go
-var _ = kinit.MustDeclare(func() { ... })
-```
-
-instead of
-
-```go
-func init() {
-	kinit.MustDeclare(func() { ... })
-}
-```
-
-> Declared functions are not applicable for local containers.
-
-> All the methods mentioned below also have `Must` versions that panic on error but don't return `struct{}`.
+can be filled up when [initializing packages](https://golang.org/doc/effective_go.html#init).
 
 ### Constructors
 
@@ -92,7 +61,7 @@ Here `Type` returns a type of object to create, `Parameters` returns types of ot
 this object and finally `Create` creates and returns a new object and its destructor (use`kdone.Noop`, not nil,
 if object has no destructor).
 
-To register a constructor in the container use `kinit.Provide` method.
+To register a constructor in the container use the `Provide` method.
 
 The container allows to have only one constructor for each type. However, the `reflect.Type` is the interface, and
 you can implement it as you want, e.g. as following:
@@ -106,15 +75,6 @@ type NamedType stuct {
 
 Just keep in mind that the container uses a simple comparison of `reflect.Type` instances when looks up for
 necessary constructors (as well as processors and already created objects).
-
-In addition to the function-based constructor implementation the **[KInitX](https://github.com/go-kata/kinitx)**
-library provides following implementations:
-
-* **Opener** is the function-based constructor creating an object that implements the `io.Closer` interface.
-  The object's `Close` method is treated as a destructor.
-* **Initializer** is the memberwise initializer of a struct. It doesn't provide a destructor.
-
-You can find more details in the [documentation](https://pkg.go.dev/github.com/go-kata/kinitx) for the library.
 
 ### Processors
 
@@ -137,12 +97,10 @@ type Processor interface {
 Here `Type` returns a type of object to process, `Parameters` returns types of other objects required to process
 this object and finally `Process` processes an object.
 
-To register a processor in the container use `kinit.Attach` method.
+To register a processor in the container use the `Attach` method.
 
 The container allows to have an unlimited number of processors for each type but doesn't guarantee the order of
 their calling.
-
-The **[KInitX](https://github.com/go-kata/kinitx)** library provides the function-based processor implementation only.
 
 ### Functors
 
@@ -161,7 +119,7 @@ type Functor interface {
 Here `Parameters` returns types of objects required to call a function and `Call` calls a function and may return
 *further functors*.
 
-To run functors in the container use `kinit.Run` method.
+To run functors in the container use the `Run` method.
 
 At the start of run the container creates so-called *arena* that holds all created objects (only one object
 for each type). If some object required as a dependency is already on the arena it will be used, otherwise
@@ -171,21 +129,104 @@ automatically destroyed.
 The container runs given functors sequentially. Their dependencies are resolved recursively using registered
 constructors and processors. If functor (let's call it *branched*) returns further functors, the container runs
 all of them before continue running functors following the branched one. This is called the *Depth-First Run*.
+  
+## KInitX
 
-In addition to the function-based functor implementation the **[KInitX](https://github.com/go-kata/kinitx)**
-library provides following implementations:
+[![Go Reference](https://pkg.go.dev/badge/github.com/go-kata/kinit/kinitx.svg)](https://pkg.go.dev/github.com/go-kata/kinit/kinitx)
 
-* **Injector** is the provider of object that is directly registered on the arena instead of being created
-  during the dependency tree resolution. The provided object must be destroyed manually after run ends.
+This subpackage provides the expansion set includes default handy implementations of main library interfaces
+along with other handy tools. In most cases the KInitX is all you need to use the entire KInit functionality.
 
-### Putting all together
+There are following implementations:
+
+**Constructor** represents a constructor based on a function. It accepts `func(...) T`, `func(...) (T, error)` and
+`func(...) (T, kdone.Destructor, error)` signatures where `T` is an arbitrary Go type.
+
+```go
+kinitx.MustProvide(func(config *Config) (*Object, kdone.Destructor, error) { ... })
+```
+
+**Opener** represents a constructor based on a function that creates an implementation of the `io.Closer` interface.
+It accepts `func(...) C` and `func(...) (C, error)` signatures where `C` is an arbitrary implementation of the
+`io.Closer` interface.
+
+```go
+kinitx.MustProvide(func(logger *log.Logger) (*sql.DB, error) { ... })
+```
+
+**Initializer** represents a memberwise initializer of a struct. It accepts a template struct like a `YourType{}`
+and a template struct pointer like a `(*YourType)(nil)` or `new(YourType)`.
+
+```go
+kinitx.MustProvide((*Config)(nil))
+```
+
+**Binder** represents a pseudo-constructor that casts an object to an interface. It accepts an interface pointer
+like a `(*YourInterface)(nil)`.
+
+```go
+kinitx.MustBind((*StorageInterface)(nil), (*PostgresStrorage)(nil))
+```
+
+**Processor** represents a processor based on a function. It accepts `func(T, ...)` and `func(T, ...) error`
+signatures where `T` is an arbitrary Go type.
+
+```go
+kinitx.MustAttach((*Object).SetOptionalProperty)
+```
+
+**Functor** represents a functor based on a function. It accepts `func(...)`, `func(...) (error)`,
+`func(...) (kinit.Functor, error)` and `func(...) ([]kinit.Functor, error)` signatures.
+
+```go
+kinitx.MustRun(func(app *Application) error { ... })
+```
+
+## KInitQ
+
+[![Go Reference](https://pkg.go.dev/badge/github.com/go-kata/kinit/kinitq.svg)](https://pkg.go.dev/github.com/go-kata/kinit/kinitq)
+
+The DI mechanism provided by the main library is reflection-based and works in the runtime. However, this subpackage
+makes it possible to validate the dependency graph semi-statically thanks to build tags.
+
+Just add two main functions as following:
+
+`main.go`
+
+```go
+// +build !inspect
+
+package main
+
+import "github.com/go-kata/kinit/kinitx"
+
+func main() { kinitx.MustRun(EntryPoint) }
+```
+
+`main_inspect.go`
+
+```go
+// +build inspect
+
+package main
+
+import "github.com/go-kata/kinit/kinitx"
+
+func main() { kinitx.MustInspect(nil) }
+```
+
+Now to validate the dependency graph of your program just run:
+
+`go run -tags inspect`
+
+For more details learn the documentation for the `kinitq` and `kinitx` subpackages and explore examples.
+
+## Putting all together
 
 In the [github.com/go-kata/examples](https://github.com/go-kata/examples) repository you can find examples of
 how may the code uses this library looks like.
 
 ## References
-
-**[KInitX](https://github.com/go-kata/kinitx)** is the library that provides default extensions for the **KInit**.
 
 **[KDone](https://github.com/go-kata/kdone)** is the library that provides tools for destroying objects.
 

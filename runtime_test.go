@@ -22,12 +22,12 @@ func TestRuntime(t *testing.T) {
 	arena := NewArena()
 	defer arena.MustFinalize()
 	runtime := MustNewRuntime(ctr, arena)
-	runtime.MustRegister(reflect.TypeOf(t), reflect.ValueOf(t), kdone.Noop)
+	runtime.MustPut(reflect.TypeOf(t), reflect.ValueOf(t), kdone.Noop)
 	runtime.MustRun(newTestFunctor(func(innerRuntime1 *Runtime, i32 int32) ([]Functor, error) {
 		if i32 != 1 {
 			return nil, kerror.Newf(kerror.EInvalid, "int32: %d expected, %d given", 1, i32)
 		}
-		innerRuntime1.MustRegister(reflect.TypeOf(t), reflect.ValueOf(t), kdone.Noop)
+		innerRuntime1.MustPut(reflect.TypeOf(t), reflect.ValueOf(t), kdone.Noop)
 		innerRuntime1.MustRun(newTestFunctor(func(innerRuntime2 *Runtime, i32 int32, i64 int64) ([]Functor, error) {
 			if i32 != 1 {
 				return nil, kerror.Newf(kerror.EInvalid, "int32: %d expected, %d given", 1, i32)
@@ -35,7 +35,7 @@ func TestRuntime(t *testing.T) {
 			if i64 != 2 {
 				return nil, kerror.Newf(kerror.EInvalid, "int64: %d expected, %d given", 2, i64)
 			}
-			innerRuntime2.MustRegister(reflect.TypeOf(t), reflect.ValueOf(t), kdone.Noop)
+			innerRuntime2.MustPut(reflect.TypeOf(t), reflect.ValueOf(t), kdone.Noop)
 			return nil, nil
 		}))
 		return nil, nil
@@ -60,9 +60,9 @@ func TestNewRuntime__NilArena(t *testing.T) {
 	}
 }
 
-func TestNilRuntime_Register(t *testing.T) {
+func TestNilRuntime_Put(t *testing.T) {
 	x := 1
-	err := (*Runtime)(nil).Register(reflect.TypeOf(x), reflect.ValueOf(x), kdone.Noop)
+	err := (*Runtime)(nil).Put(reflect.TypeOf(x), reflect.ValueOf(x), kdone.Noop)
 	t.Logf("%+v", err)
 	if kerror.ClassOf(err) != kerror.ENil {
 		t.Fail()

@@ -32,8 +32,8 @@ func NewArena(parents ...*Arena) *Arena {
 	return a
 }
 
-// Register registers the given object on this arena.
-func (a *Arena) Register(t reflect.Type, obj reflect.Value, dtor kdone.Destructor) error {
+// Put registers the given object on this arena.
+func (a *Arena) Put(t reflect.Type, obj reflect.Value, dtor kdone.Destructor) error {
 	if a == nil {
 		return kerror.New(kerror.ENil, "nil arena cannot register object")
 	}
@@ -53,9 +53,9 @@ func (a *Arena) Register(t reflect.Type, obj reflect.Value, dtor kdone.Destructo
 	return nil
 }
 
-// MustRegister is a variant of the Register that panics on error.
-func (a *Arena) MustRegister(t reflect.Type, obj reflect.Value, dtor kdone.Destructor) {
-	if err := a.Register(t, obj, dtor); err != nil {
+// MustPut is a variant of the Put that panics on error.
+func (a *Arena) MustPut(t reflect.Type, obj reflect.Value, dtor kdone.Destructor) {
+	if err := a.Put(t, obj, dtor); err != nil {
 		panic(err)
 	}
 }

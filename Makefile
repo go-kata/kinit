@@ -11,5 +11,5 @@ all:
 .PHONY: codecov
 codecov:
 	mkdir -p "$(L_LOCAL_DIR)"
-	go test -race -coverprofile="$(L_LOCAL_DIR)/coverage.txt" -covermode=atomic
+	go test -race -coverprofile="$(L_LOCAL_DIR)/coverage.txt" -covermode=atomic ./...
 	curl -s https://codecov.io/bash | bash -s - -t $(KINIT_CODECOV_TOKEN) -f "$(L_LOCAL_DIR)/coverage.txt"
