@@ -38,8 +38,8 @@ var runtimeType = reflect.TypeOf((*kinit.Runtime)(nil))
 // - if x implements the kinit.Constructor interface it will used by itself;
 //
 // - if x is a function it will be parsed using the NewOpener only when returns
-//   an implementation of the io.Closer interface at the first position and, optionally,
-//   error at the second; all other functions will be parsed using the NewConstructor;
+// an implementation of the io.Closer interface at the first position and, optionally,
+// error at the second; all other functions will be parsed using the NewConstructor;
 //
 // - if x is a struct or pointer it will be parsed using the NewInitializer;
 //

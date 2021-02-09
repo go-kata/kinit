@@ -135,7 +135,7 @@ all of them before continue running functors following the branched one. This is
 [![Go Reference](https://pkg.go.dev/badge/github.com/go-kata/kinit/kinitx.svg)](https://pkg.go.dev/github.com/go-kata/kinit/kinitx)
 
 This subpackage provides the expansion set includes default handy implementations of main library interfaces
-along with other handy tools. In most cases the KInitX is all you need to use the entire KInit functionality.
+along with other handy tools. In most cases the **KInitX** is all you need to use the entire **KInit** functionality.
 
 There are following implementations:
 
@@ -175,7 +175,7 @@ signatures where `T` is an arbitrary Go type.
 kinitx.MustAttach((*Object).SetOptionalProperty)
 ```
 
-**Functor** represents a functor based on a function. It accepts `func(...)`, `func(...) (error)`,
+**Functor** represents a functor based on a function. It accepts `func(...)`, `func(...) error`,
 `func(...) (kinit.Functor, error)` and `func(...) ([]kinit.Functor, error)` signatures.
 
 ```go
@@ -219,7 +219,7 @@ Now to validate the dependency graph of your program just run:
 
 `go run -tags inspect`
 
-For more details learn the documentation for the `kinitq` and `kinitx` subpackages and explore examples.
+For more details learn the documentation and explore examples.
 
 ## Putting all together
 
