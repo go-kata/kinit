@@ -219,6 +219,14 @@ Now to validate the dependency graph of your program just run:
 
 `go run -tags inspect`
 
+Example output:
+
+```
+2 errors occurred:
+    #1 🠖 cyclic dependency: *config.Config 🠖 config.Loader 🠖 *config.FileLoader 🠖 *config.Config
+    #2 🠖 unsatisfied dependency: *sql.DB 🠖 *log.Logger
+```
+
 For more details learn the documentation and explore examples.
 
 ## Putting all together
