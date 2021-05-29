@@ -275,11 +275,11 @@ func TestContainer_Run__ErrorProneFunctor(t *testing.T) {
 	ctr := NewContainer()
 	err := ctr.Run(
 		newTestFunctor(func() ([]Functor, error) {
-			return nil, kerror.New(kerror.ECustom, "test error")
+			return nil, kerror.New(kerror.Label("test.Error"), "test error")
 		}),
 	)
 	t.Logf("%+v", err)
-	if kerror.ClassOf(err) != kerror.ECustom {
+	if kerror.ClassOf(err) != kerror.Label("test.Error") {
 		t.Fail()
 		return
 	}
@@ -304,12 +304,12 @@ func TestContainer_Run__ErrorProneSubsequentFunctor(t *testing.T) {
 	err := ctr.Run(
 		newTestFunctor(func() ([]Functor, error) {
 			return []Functor{newTestFunctor(func() ([]Functor, error) {
-				return nil, kerror.New(kerror.ECustom, "test error")
+				return nil, kerror.New(kerror.Label("test.Error"), "test error")
 			})}, nil
 		}),
 	)
 	t.Logf("%+v", err)
-	if kerror.ClassOf(err) != kerror.ECustom {
+	if kerror.ClassOf(err) != kerror.Label("test.Error") {
 		t.Fail()
 		return
 	}
@@ -318,7 +318,7 @@ func TestContainer_Run__ErrorProneSubsequentFunctor(t *testing.T) {
 func TestContainer_Run__ErrorProneConstructor(t *testing.T) {
 	ctr := NewContainer()
 	ctr.MustProvide(newTestConstructor(func() (int, kdone.Destructor, error) {
-		return 0, kdone.Noop, kerror.New(kerror.ECustom, "test error")
+		return 0, kdone.Noop, kerror.New(kerror.Label("test.Error"), "test error")
 	}))
 	err := ctr.Run(
 		newTestFunctor(func(int) ([]Functor, error) {
@@ -326,7 +326,7 @@ func TestContainer_Run__ErrorProneConstructor(t *testing.T) {
 		}),
 	)
 	t.Logf("%+v", err)
-	if kerror.ClassOf(err) != kerror.ECustom {
+	if kerror.ClassOf(err) != kerror.Label("test.Error") {
 		t.Fail()
 		return
 	}
@@ -338,7 +338,7 @@ func TestContainer_Run__ErrorProneProcessor(t *testing.T) {
 		return 1, kdone.Noop, nil
 	}))
 	ctr.MustAttach(newTestProcessor(func(int) error {
-		return kerror.New(kerror.ECustom, "test error")
+		return kerror.New(kerror.Label("test.Error"), "test error")
 	}))
 	err := ctr.Run(
 		newTestFunctor(func(int) ([]Functor, error) {
@@ -346,7 +346,7 @@ func TestContainer_Run__ErrorProneProcessor(t *testing.T) {
 		}),
 	)
 	t.Logf("%+v", err)
-	if kerror.ClassOf(err) != kerror.ECustom {
+	if kerror.ClassOf(err) != kerror.Label("test.Error") {
 		t.Fail()
 		return
 	}
