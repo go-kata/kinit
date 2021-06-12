@@ -69,8 +69,8 @@ func NewFunctor(x interface{}) (*Functor, error) {
 		if ft.Out(0) != errorType {
 			return nil, kerror.Newf(kerror.EViolation, "function %s is not a functor", ft)
 		}
+		f.furtherOutIndex = -1
 		f.furtherIsSlice = false
-		f.errorOutIndex = -1
 		f.errorOutIndex = 0
 	case 2:
 		out0 := ft.Out(0)
